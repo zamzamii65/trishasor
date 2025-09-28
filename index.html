@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Trisha Sorter</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #ffe4ec;
+      margin: 0;
+      padding: 40px;
+      font-size: 22px;
+    }
+    h1 { color: #d6336c; font-size: 50px; }
+    p { color: #444; font-size: 26px; }
+
+    /* ---------------- FILTER SECTION ---------------- */
+    #filter-section { margin-top: 20px; }
+    .custom-select {
+      display: block;
+      margin: 15px auto;
+      padding: 16px;
+      border-radius: 8px;
+      border: 2px solid #ff6fa5;
+      font-size: 22px;
+      width: 320px;
+      background: white;
+      color: #333;
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml;utf8,<svg fill='gray' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      background-size: 20px;
+    }
+    .custom-select:focus {
+      outline: none;
+      border-color: #e05285;
+      box-shadow: 0 0 5px rgba(224, 82, 133, 0.5);
+    }
+    .switch { display: inline-flex; align-items: center; margin-top: 20px; cursor: pointer; font-size: 22px; }
+    .switch.disabled { opacity: 0.5; pointer-events: none; }
+    .switch input { display: none; }
+    .slider {
+      width: 70px; height: 36px; background: #ccc; border-radius: 20px; margin-right: 15px; position: relative; cursor: pointer;
+    }
+    .slider::before {
+      content: ""; position: absolute; width: 28px; height: 28px; background: white; border-radius: 50%;
+      top: 4px; left: 4px; transition: transform 0.3s;
+    }
+    input:checked + .slider { background: #ff6fa5; }
+    input:checked + .slider::before { transform: translateX(34px); }
+    button {
+      margin-top: 30px; padding: 18px 36px; font-size: 26px; border: none;
+      background: #ff6fa5; color: white; border-radius: 10px; cursor: pointer;
+    }
+    button:disabled { background: #ccc; cursor: not-allowed; }
+    button:hover:not(:disabled) { background: #e05285; }
+
+    /* ---------------- SORTER SECTION ---------------- */
+    #sorter-section { display: none; margin-top: 30px; }
+    .sort-container {
+      display: flex; justify-content: center; align-items: center; gap: 40px; margin: 40px 0;
+    }
+    .card {
+      background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      width: 220px; cursor: pointer; transition: transform 0.2s;
+    }
+    .card:hover { transform: scale(1.05); }
+    .card img { width: 100%; border-radius: 12px; }
+    .or-text { font-size: 24px; font-weight: bold; color: #d6336c; align-self: center; }
+    .tie-btn, .undo-btn {
+      display: inline-block; margin: 15px auto; padding: 14px 40px; font-size: 20px; border: none;
+      border-radius: 25px; background: #ff4d6d; color: white; cursor: pointer;
+    }
+    .tie-btn:hover, .undo-btn:hover { background: #e63956; }
+    .undo-btn { background: #6c757d; display: none; }
+    .undo-btn:hover { background: #5a6268; }
+    .progress-container { width: 80%; margin: 20px auto; text-align: left; }
+    .progress-label { font-weight: bold; margin-bottom: 5px; }
+    .progress-bar { width: 100%; background: #f5b5c5; border-radius: 10px; overflow: hidden; }
+    .progress { height: 14px; background: #ff6fa5; width: 0%; transition: width 0.3s; }
+    .filters { margin-top: 15px; font-size: 14px; }
+    .filter-tag {
+      display: inline-block; background: #ff6fa5; color: white; padding: 6px 12px;
+      border-radius: 20px; margin: 3px; font-size: 13px;
+    }
+
+    /* ---------------- RESULT SECTION ---------------- */
+    #result-section { display: none; margin-top: 30px; }
+    .result-item {
+      background: white;
+      border-radius: 12px;
+      padding: 12px 20px;
+      margin: 12px auto;
+      max-width: 500px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    .rank-number {
+      font-weight: bold;
+      color: #fff;
+      background: #ff6fa5;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .result-item img {
+      border-radius: 10px;
+    }
+    .result-item.top3 img {
+      width: 120px;
+      height: auto;
+    }
+    .result-item.other img {
+      width: 60px;
+      height: auto;
+    }
+    .restart-btn {
+      margin-top: 30px;
+      padding: 16px 30px;
+      font-size: 22px;
+      border: none;
+      background: #ff6fa5;
+      color: white;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    .restart-btn:hover { background: #e05285; }
+  </style>
+</head>
+<body>
+  <!-- FILTER SECTION -->
+  <div id="filter-section">
+    <h1>Welcome to Trisha Sorter!</h1>
+    <p>Pilih filter untuk menyortir foto Trisha</p>
+
+    <div class="filters">
+      <select id="jenisFoto" class="custom-select">
+        <option value="">Pilih Jenis Foto</option>
+        <option value="Semua Jenis Foto">Semua Jenis Foto</option>
+        <option value="Meet and Greet">Meet and Greet</option>
+        <option value="Off Air & On Air">Off Air & On Air</option>
+        <option value="Trishelca">Trishelca</option>
+      </select>
+
+      <select id="tahunFoto" class="custom-select" disabled>
+        <option value="">Pilih Tahun</option>
+        <option value="2024">2024</option>
+        <option value="2025">2025</option>
+      </select>
+
+      <label class="switch disabled" id="switchWrapper">
+        <input type="checkbox" id="allYear" disabled>
+        <span class="slider"></span>
+        <span>All Year</span>
+      </label>
+
+      <button id="startBtn" disabled>START SORTING!</button>
+    </div>
+  </div>
+
+  <!-- SORTER SECTION -->
+  <div id="sorter-section">
+    <div class="sort-container">
+      <div class="card" id="card1"><img src="https://via.placeholder.com/200x250" alt="Foto 1"></div>
+      <div class="or-text">OR</div>
+      <div class="card" id="card2"><img src="https://via.placeholder.com/200x250" alt="Foto 2"></div>
+    </div>
+
+    <button class="tie-btn" id="tieBtn">TIE!</button>
+    <button class="undo-btn" id="undoBtn">UNDO LAST PICK</button>
+
+    <div class="progress-container">
+      <div class="progress-label">SORT PROGRESS: <span id="progress-text">0%</span></div>
+      <div class="progress-bar"><div class="progress" id="progress-bar"></div></div>
+    </div>
+
+    <div class="filters" id="selected-filters"></div>
+  </div>
+
+  <!-- RESULT SECTION -->
+  <div id="result-section">
+    <h1>Your Results!</h1>
+    <div id="ranking-list"></div>
+    <button class="restart-btn" onclick="restartSorter()">Start a New Sorter</button>
+  </div>
+
+  <script>
+    const startBtn = document.getElementById("startBtn");
+    const jenisFoto = document.getElementById("jenisFoto");
+    const tahunFoto = document.getElementById("tahunFoto");
+    const allYear = document.getElementById("allYear");
+    const switchWrapper = document.getElementById("switchWrapper");
+    const filterSection = document.getElementById("filter-section");
+    const sorterSection = document.getElementById("sorter-section");
+    const resultSection = document.getElementById("result-section");
+    const rankingList = document.getElementById("ranking-list");
+    const selectedFilters = document.getElementById("selected-filters");
+    const card1 = document.getElementById("card1").querySelector("img");
+    const card2 = document.getElementById("card2").querySelector("img");
+    const progressBar = document.getElementById("progress-bar");
+    const progressText = document.getElementById("progress-text");
+    const undoBtn = document.getElementById("undoBtn");
+
+    let fotoList = [];
+    let totalSteps = 0;
+    let currentStep = 0;
+    const history = [];
+    const score = {};
+    let lastPair = [];
+
+    const defaultTahunOptions = tahunFoto.innerHTML;
+
+    // ---------------- FOTO SET ----------------
+    const fotoSets = {
+      "Meet and Greet": {
+        2024: Array.from({length: 3}, (_, i) => `mng24-${i+1}.jpg`),
+        2025: Array.from({length: 2}, (_, i) => `mng25-${i+1}.jpg`)
+      },
+      "Off Air & On Air": {
+        2024: Array.from({length: 10}, (_, i) => `off24-${i+1}.jpg`),
+        2025: Array.from({length: 8}, (_, i) => `off25-${i+1}.jpg`)
+      },
+      "Trishelca": {
+        2024: Array.from({length: 11}, (_, i) => `trishelca24-${i+1}.jpg`),
+        2025: Array.from({length: 11}, (_, i) => `trishelca25-${i+1}.jpg`)
+      }
+    };
+
+    function getFotos(jenis, tahun, allYear) {
+      let result = [];
+      if (jenis === "Semua Jenis Foto") {
+        Object.keys(fotoSets).forEach(k => {
+          if (allYear) {
+            result = result.concat(fotoSets[k]["2024"] || [], fotoSets[k]["2025"] || []);
+          } else {
+            result = result.concat(fotoSets[k][tahun] || []);
+          }
+        });
+      } else {
+        if (allYear) {
+          result = [...(fotoSets[jenis]["2024"] || []), ...(fotoSets[jenis]["2025"] || [])];
+        } else {
+          result = fotoSets[jenis][tahun] || [];
+        }
+      }
+      return result;
+    }
+
+    function getRandomPair() {
+      if (fotoList.length < 2) return null;
+
+      let f1, f2;
+      do {
+        f1 = fotoList[Math.floor(Math.random() * fotoList.length)];
+        f2 = fotoList[Math.floor(Math.random() * fotoList.length)];
+      } while (f1 === f2 || (lastPair.includes(f1) && lastPair.includes(f2)));
+
+      lastPair = [f1, f2];
+      return [f1, f2];
+    }
+
+    function checkFilters() {
+      if (jenisFoto.value) {
+        tahunFoto.disabled = false;
+      } else {
+        tahunFoto.disabled = true;
+        tahunFoto.value = "";
+        allYear.disabled = true;
+        allYear.checked = false;
+        switchWrapper.classList.add("disabled");
+        tahunFoto.innerHTML = defaultTahunOptions;
+      }
+      if (jenisFoto.value && tahunFoto.value) {
+        allYear.disabled = false;
+        switchWrapper.classList.remove("disabled");
+      } else {
+        allYear.disabled = true;
+        allYear.checked = false;
+        switchWrapper.classList.add("disabled");
+      }
+      if (jenisFoto.value && (tahunFoto.value || allYear.checked)) {
+        startBtn.disabled = false;
+      } else {
+        startBtn.disabled = true;
+      }
+    }
+
+    jenisFoto.addEventListener("change", checkFilters);
+    tahunFoto.addEventListener("change", checkFilters);
+
+    allYear.addEventListener("change", () => {
+      if (allYear.checked) {
+        tahunFoto.innerHTML = `<option value="all" selected>2024 & 2025 (Semua Tahun)</option>`;
+        tahunFoto.disabled = true;
+      } else {
+        tahunFoto.innerHTML = defaultTahunOptions;
+        tahunFoto.disabled = false;
+      }
+      checkFilters();
+    });
+
+    startBtn.addEventListener("click", () => {
+      const jenis = jenisFoto.value;
+      const tahun = tahunFoto.value === "all" ? "Semua Tahun" : tahunFoto.value;
+      const isAllYear = allYear.checked;
+      filterSection.style.display = "none";
+      sorterSection.style.display = "block";
+      resultSection.style.display = "none";
+      fotoList = getFotos(jenis, tahun, isAllYear);
+      totalSteps = fotoList.length * 2;
+      currentStep = 0;
+      history.length = 0;
+      lastPair = [];
+      Object.keys(score).forEach(k => delete score[k]);
+      undoBtn.style.display = "none";
+      selectedFilters.innerHTML = `<span class="filter-tag">${jenis}</span><span class="filter-tag">${tahun}</span>`;
+      showNextPair();
+      renderProgress();
+    });
+
+    function showNextPair() {
+      if (currentStep >= totalSteps) {
+        showRanking();
+        return;
+      }
+      const pair = getRandomPair();
+      if (!pair) return;
+      card1.src = pair[0];
+      card2.src = pair[1];
+    }
+
+    function renderProgress() {
+      let percent = Math.round((currentStep / totalSteps) * 100);
+      progressBar.style.width = percent + "%";
+      progressText.textContent = percent + "%";
+    }
+
+    function pick(action) {
+      const [f1, f2] = lastPair;
+      if (action === "left") score[f1] = (score[f1] || 0) + 1;
+      if (action === "right") score[f2] = (score[f2] || 0) + 1;
+      if (action === "tie") { score[f1] = (score[f1] || 0) + 1; score[f2] = (score[f2] || 0) + 1; }
+      history.push({action, f1, f2});
+      currentStep++;
+      if (history.length > 0) undoBtn.style.display = "inline-block";
+      renderProgress();
+      showNextPair();
+    }
+
+    function undoProgress() {
+      if (history.length > 0) {
+        const last = history.pop();
+        const {action, f1, f2} = last;
+        if (action === "left") score[f1]--;
+        if (action === "right") score[f2]--;
+        if (action === "tie") { score[f1]--; score[f2]--; }
+        currentStep--;
+        if (history.length === 0) undoBtn.style.display = "none";
+        renderProgress();
+        showNextPair();
+      }
+    }
+
+    function showRanking() {
+      sorterSection.style.display = "none";
+      resultSection.style.display = "block";
+      rankingList.innerHTML = "";
+      let ranking = Object.entries(score).sort((a, b) => b[1] - a[1]);
+      ranking.forEach(([foto], i) => {
+        const div = document.createElement("div");
+        div.className = "result-item " + (i < 3 ? "top3" : "other");
+        div.innerHTML = `
+          <div class="rank-number">${i+1}</div>
+          <img src="${foto}" alt="Foto ${i+1}">
+        `;
+        rankingList.appendChild(div);
+      });
+    }
+
+    function restartSorter() {
+      filterSection.style.display = "block";
+      sorterSection.style.display = "none";
+      resultSection.style.display = "none";
+      jenisFoto.value = "";
+      tahunFoto.innerHTML = defaultTahunOptions;
+      tahunFoto.disabled = true;
+      allYear.checked = false;
+      allYear.disabled = true;
+      switchWrapper.classList.add("disabled");
+      startBtn.disabled = true;
+    }
+
+    document.getElementById("card1").addEventListener("click", () => pick("left"));
+    document.getElementById("card2").addEventListener("click", () => pick("right"));
+    document.getElementById("tieBtn").addEventListener("click", () => pick("tie"));
+    undoBtn.addEventListener("click", undoProgress);
+
+    checkFilters();
+  </script>
+</body>
+</html>
