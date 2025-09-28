@@ -64,11 +64,11 @@
       display: flex; justify-content: center; align-items: center; gap: 40px; margin: 40px 0;
     }
     .card {
-      background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      background: white; padding: 12px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
       width: 220px; cursor: pointer; transition: transform 0.2s;
     }
     .card:hover { transform: scale(1.05); }
-    .card img { width: 100%; border-radius: 12px; }
+    .card img { width: 100%; border-radius: 8px; }
     .or-text { font-size: 24px; font-weight: bold; color: #d6336c; align-self: center; }
     .tie-btn, .undo-btn {
       display: inline-block; margin: 15px auto; padding: 14px 40px; font-size: 20px; border: none;
@@ -89,43 +89,75 @@
 
     /* ---------------- RESULT SECTION ---------------- */
     #result-section { display: none; margin-top: 30px; }
-    .result-item {
-      background: white;
-      border-radius: 12px;
-      padding: 12px 20px;
-      margin: 12px auto;
-      max-width: 500px;
-      display: flex;
-      align-items: center;
-      gap: 15px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    #filter-info {
+      margin-bottom: 25px;
+      font-size: 20px;
+      color: #333;
     }
-    .rank-number {
+    .ranking-top3 {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 18px;
+      margin-bottom: 40px;
+    }
+    .top3-item {
+      background: white;
+      border-radius: 10px;
+      padding: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      width: auto; /* auto, ngikut isi */
+    }
+    .top3-item img {
+      width: 180px; /* diperbesar */
+      border-radius: 8px;
+    }
+    .top3-rank {
+      font-size: 22px;
       font-weight: bold;
       color: #fff;
       background: #ff6fa5;
       border-radius: 50%;
-      width: 40px;
-      height: 40px;
+      width: 42px;
+      height: 42px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 18px;
       flex-shrink: 0;
     }
-    .result-item img {
-      border-radius: 10px;
+
+    .ranking-others {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr); /* jadi 5 kolom */
+      gap: 10px; /* lebih rapat */
+      justify-items: center;
     }
-    .result-item.top3 img {
-      width: 120px;
-      height: auto;
+    .other-item {
+      background: white;
+      border-radius: 8px;
+      padding: 6px;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+      width: 120px; /* dibesarin */
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
-    .result-item.other img {
-      width: 60px;
-      height: auto;
+    .other-item img {
+      width: 100px; /* dibesarin */
+      border-radius: 6px;
     }
+    .other-rank {
+      margin-top: 4px;
+      font-size: 14px;
+      font-weight: bold;
+      color: #d6336c;
+    }
+
     .restart-btn {
-      margin-top: 30px;
+      margin-top: 40px;
       padding: 16px 30px;
       font-size: 22px;
       border: none;
@@ -190,7 +222,9 @@
   <!-- RESULT SECTION -->
   <div id="result-section">
     <h1>Your Results!</h1>
-    <div id="ranking-list"></div>
+    <div id="filter-info"></div>
+    <div class="ranking-top3" id="ranking-top3"></div>
+    <div class="ranking-others" id="ranking-others"></div>
     <button class="restart-btn" onclick="restartSorter()">Start a New Sorter</button>
   </div>
 
@@ -203,7 +237,9 @@
     const filterSection = document.getElementById("filter-section");
     const sorterSection = document.getElementById("sorter-section");
     const resultSection = document.getElementById("result-section");
-    const rankingList = document.getElementById("ranking-list");
+    const rankingTop3 = document.getElementById("ranking-top3");
+    const rankingOthers = document.getElementById("ranking-others");
+    const filterInfo = document.getElementById("filter-info");
     const selectedFilters = document.getElementById("selected-filters");
     const card1 = document.getElementById("card1").querySelector("img");
     const card2 = document.getElementById("card2").querySelector("img");
@@ -217,6 +253,7 @@
     const history = [];
     const score = {};
     let lastPair = [];
+    let currentFilterText = "";
 
     const defaultTahunOptions = tahunFoto.innerHTML;
 
@@ -258,13 +295,11 @@
 
     function getRandomPair() {
       if (fotoList.length < 2) return null;
-
       let f1, f2;
       do {
         f1 = fotoList[Math.floor(Math.random() * fotoList.length)];
         f2 = fotoList[Math.floor(Math.random() * fotoList.length)];
       } while (f1 === f2 || (lastPair.includes(f1) && lastPair.includes(f2)));
-
       lastPair = [f1, f2];
       return [f1, f2];
     }
@@ -323,6 +358,7 @@
       lastPair = [];
       Object.keys(score).forEach(k => delete score[k]);
       undoBtn.style.display = "none";
+      currentFilterText = `${jenis} ${tahun}`;
       selectedFilters.innerHTML = `<span class="filter-tag">${jenis}</span><span class="filter-tag">${tahun}</span>`;
       showNextPair();
       renderProgress();
@@ -374,16 +410,28 @@
     function showRanking() {
       sorterSection.style.display = "none";
       resultSection.style.display = "block";
-      rankingList.innerHTML = "";
+      rankingTop3.innerHTML = "";
+      rankingOthers.innerHTML = "";
+      filterInfo.textContent = `FILTERS : ${currentFilterText}`;
       let ranking = Object.entries(score).sort((a, b) => b[1] - a[1]);
       ranking.forEach(([foto], i) => {
-        const div = document.createElement("div");
-        div.className = "result-item " + (i < 3 ? "top3" : "other");
-        div.innerHTML = `
-          <div class="rank-number">${i+1}</div>
-          <img src="${foto}" alt="Foto ${i+1}">
-        `;
-        rankingList.appendChild(div);
+        if (i < 3) {
+          const div = document.createElement("div");
+          div.className = "top3-item";
+          div.innerHTML = `
+            <div class="top3-rank">${i+1}</div>
+            <img src="${foto}" alt="Foto ${i+1}">
+          `;
+          rankingTop3.appendChild(div);
+        } else {
+          const div = document.createElement("div");
+          div.className = "other-item";
+          div.innerHTML = `
+            <img src="${foto}" alt="Foto ${i+1}">
+            <div class="other-rank">#${i+1}</div>
+          `;
+          rankingOthers.appendChild(div);
+        }
       });
     }
 
